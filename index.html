@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Discord Webhook Bulk Sender</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#0f172a;color:#e5e7eb;display:flex;justify-content:center;padding:30px} .wrap{width:100%;max-width:800px;background:#111827;border:1px solid #334155;border-radius:18px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.35)} h1{margin-top:0} textarea,input,button{width:100%;border-radius:12px;border:1px solid #475569;background:#0b1220;color:#fff;padding:12px;font-size:15px} textarea{min-height:180px;resize:vertical} button{cursor:pointer;background:#2563eb;border:none;font-weight:700;margin-top:12px} button:hover{background:#1d4ed8}.row{display:grid;grid-template-columns:1fr 1fr;gap:14px}.muted{color:#94a3b8;font-size:14px}.log{margin-top:14px;white-space:pre-wrap;background:#020617;padding:12px;border-radius:12px;min-height:120px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Discord Webhook Bulk Sender</h1>
+<p class="muted">This version auto-loads <code>/hooks.txt</code> where each line is a Discord webhook URL.</p>
+<div class="row">
+<div>
+<label>Webhook Source</label>
+<input type="text" value="/hooks.txt" disabled>
+</div>
+<div>
+<label>Delay Between Sends (ms)</label>
+<input type="number" id="delay" value="1000" min="0">
+</div>
+</div>
+<br>
+<label>Message</label>
+<textarea id="message" placeholder="Enter announcement message..."></textarea>
+<button id="sendBtn">Send to All Webhooks</button>
+<div class="log" id="log">Ready.</div>
+</div>
+<script>
+let webhooks=[];
+const log=document.getElementById('log');
+async function loadHooks(){
+ try{
+   const res=await fetch('/hooks.txt');
+   const text=await res.text();
+   webhooks=text.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
+   log.textContent=`Loaded ${webhooks.length} webhook(s) from /hooks.txt.`;
+ }catch(e){
+   log.textContent='Failed to load /hooks.txt';
+ }
+}
+loadHooks();
+
+function wait(ms){return new Promise(r=>setTimeout(r,ms));}
+async function sendAll(){
+ const msg=document.getElementById('message').value.trim();
+ const delay=Number(document.getElementById('delay').value)||0;
+ if(!webhooks.length){log.textContent='No webhooks loaded from /hooks.txt';return;}
+ if(!msg){log.textContent='Enter a message first.';return;}
+ let ok=0,fail=0; log.textContent='Sending...\n';
+ for(let i=0;i<webhooks.length;i++){
+   const url=webhooks[i];
+   try{
+     const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:msg})});
+     if(res.ok){ok++; log.textContent+=`[${i+1}/${webhooks.length}] Success\n`;}
+     else {fail++; log.textContent+=`[${i+1}/${webhooks.length}] Failed (${res.status})\n`;}
+   }catch(err){fail++; log.textContent+=`[${i+1}/${webhooks.length}] Error\n`;}
+   if(i<webhooks.length-1) await wait(delay);
+ }
+ log.textContent+=`\nDone. Success: ${ok} | Failed: ${fail}`;
+}
+document.getElementById('sendBtn').addEventListener('click',sendAll);
+</script>
+</body>
+</html>
