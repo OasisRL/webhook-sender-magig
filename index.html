@@ -15,7 +15,7 @@
 <div class="row">
 <div>
 <label>Webhook Source</label>
-<input type="text" value="/hooks.txt" disabled>
+<input type="text" value="./hooks.txt" disabled>
 </div>
 <div>
 <label>Delay Between Sends (ms)</label>
@@ -33,12 +33,12 @@ let webhooks=[];
 const log=document.getElementById('log');
 async function loadHooks(){
  try{
-   const res=await fetch('/hooks.txt');
+   const res=await fetch('./hooks.txt');
    const text=await res.text();
-   webhooks=text.split(/\\r?\\n/).map(x=>x.trim()).filter(Boolean);
-   log.textContent=`Loaded ${webhooks.length} webhook(s) from /hooks.txt.`;
+   webhooks=text.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+   log.textContent=`Loaded ${webhooks.length} webhook(s) from hooks.txt.`;
  }catch(e){
-   log.textContent='Failed to load /hooks.txt';
+   log.textContent='Failed to load hooks.txt';
  }
 }
 loadHooks();
@@ -47,7 +47,7 @@ function wait(ms){return new Promise(r=>setTimeout(r,ms));}
 async function sendAll(){
  const msg=document.getElementById('message').value.trim();
  const delay=Number(document.getElementById('delay').value)||0;
- if(!webhooks.length){log.textContent='No webhooks loaded from /hooks.txt';return;}
+ if(!webhooks.length){log.textContent='No webhooks loaded from hooks.txt';return;}
  if(!msg){log.textContent='Enter a message first.';return;}
  let ok=0,fail=0; log.textContent='Sending...\n';
  for(let i=0;i<webhooks.length;i++){
